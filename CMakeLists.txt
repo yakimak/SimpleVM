@@ -1,14 +1,19 @@
-cmake_minimum_required(VERSION 4.2.0)
+cmake_minimum_required(VERSION 3.10)
 
-project(Boot_loader LANGUAGES C CXX)
+project(SimpleVM LANGUAGES CXX)
 
-add_library(cstring STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/CString/string_utils.c)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Библиотеки
+add_library(cstring STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/string_utils.cpp)
 add_library(LazySequence INTERFACE)
 
 target_include_directories(LazySequence INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/lib/LazySequence)
-
-target_include_directories(cstring PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/CString)
+target_include_directories(cstring PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 target_compile_features(LazySequence INTERFACE cxx_std_17)
 
-add_executable(BOOT_Loader ${CMAKE_CURRENT_SOURCE_DIR}/src/Computer/Computer.cpp)
-target_link_libraries(BOOT_Loader PUBLIC cstring LazySequence)
+# Исполняемый файл
+add_executable(SimpleVM ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+target_include_directories(SimpleVM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+target_link_libraries(SimpleVM PUBLIC cstring LazySequence)
