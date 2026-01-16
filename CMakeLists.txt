@@ -4,6 +4,7 @@ project(SimpleVM LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Библиотеки
 add_library(cstring STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/string_utils.cpp)
@@ -11,6 +12,7 @@ add_library(LazySequence INTERFACE)
 
 target_include_directories(LazySequence INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/lib/LazySequence)
 target_include_directories(cstring PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+target_include_directories(cstring PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/CString)
 target_compile_features(LazySequence INTERFACE cxx_std_17)
 
 # Исполняемый файл

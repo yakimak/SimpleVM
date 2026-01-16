@@ -7,3 +7,5 @@
 
 # СБОРКА
 build/
+!build/.git_keep
+.cache/
