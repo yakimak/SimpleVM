@@ -21,19 +21,32 @@ private:
     
     std::unordered_map<std::string, std::set<std::string>> directory_structure;
     std::string getDirectory(const std::string& path) {
-        size_t last_slash = path.find_last_of('/');
+        std::string normalized = path;
+        // Убираем завершающий слэш, если он есть (кроме корня)
+        if (normalized.size() > 1 && normalized.back() == '/') {
+            normalized.pop_back();
+        }
+        size_t last_slash = normalized.find_last_of('/');
         if (last_slash == std::string::npos) {
             return "/";  // Корневая директория
         }
-        return path.substr(0, last_slash);
+        if (last_slash == 0) {
+            return "/";  // Родитель корня - это корень
+        }
+        return normalized.substr(0, last_slash);
     }
 
     std::string getFilename(const std::string& path) {
-        size_t last_slash = path.find_last_of('/');
-        if (last_slash == std::string::npos) {
-            return path;
+        std::string normalized = path;
+        // Убираем завершающий слэш, если он есть (кроме корня)
+        if (normalized.size() > 1 && normalized.back() == '/') {
+            normalized.pop_back();
         }
-        return path.substr(last_slash + 1);
+        size_t last_slash = normalized.find_last_of('/');
+        if (last_slash == std::string::npos) {
+            return normalized;
+        }
+        return normalized.substr(last_slash + 1);
     }
 
     std::vector<size_t> findFreeBlocks(size_t count) {
@@ -99,13 +112,15 @@ public:
             throw std::runtime_error("File already exists: " + normalized_name);
         }
         std::string dir = getDirectory(normalized_name);
-        ensureDirectoryExists(dir);
+        std::string dir_key = dir;
+        if (dir_key != "/" && dir_key.back() != '/') dir_key += "/";
+        ensureDirectoryExists(dir_key);
         std::vector<size_t> blocks = findFreeBlocks(1);
         if (blocks.empty()) throw std::runtime_error("No free blocks available");
         FileDescriptor desc(normalized_name, 0, blocks[0], blocks[0], false);
         file_table[normalized_name] = desc;
         markBlocksAsUsed(blocks);
-        directory_structure[dir].insert(getFilename(normalized_name));
+        directory_structure[dir_key].insert(getFilename(normalized_name));
         return desc;
     }
 
@@ -115,10 +130,11 @@ public:
         if (normalized_path.back() != '/') normalized_path += "/";
         if (directory_structure.find(normalized_path) != directory_structure.end()) return;
         std::string parent = getDirectory(normalized_path);
-        if (parent != "/") parent += "/";
-        ensureDirectoryExists(parent);
+        std::string parent_key = parent;
+        if (parent_key != "/" && parent_key.back() != '/') parent_key += "/";
+        ensureDirectoryExists(parent_key);
         directory_structure[normalized_path] = std::set<std::string>();
-        directory_structure[parent].insert(getFilename(normalized_path));
+        directory_structure[parent_key].insert(getFilename(normalized_path));
         std::vector<size_t> blocks = findFreeBlocks(1);
         if (!blocks.empty()) {
             file_table[normalized_path] = FileDescriptor(normalized_path, 0, blocks[0], blocks[0], true);
@@ -137,8 +153,10 @@ public:
             markBlocksAsFree(blocks);
             if (drive.fileExists(normalized_name)) drive.deleteFile(normalized_name);
             std::string dir = getDirectory(normalized_name);
-            if (directory_structure.find(dir) != directory_structure.end()) {
-                directory_structure[dir].erase(getFilename(normalized_name));
+            std::string dir_key = dir;
+            if (dir_key != "/" && dir_key.back() != '/') dir_key += "/";
+            if (directory_structure.find(dir_key) != directory_structure.end()) {
+                directory_structure[dir_key].erase(getFilename(normalized_name));
             }
             file_table.erase(it);
         }
@@ -151,6 +169,13 @@ public:
             throw std::runtime_error("File not found: " + normalized_name);
         }
         std::vector<uint8_t> data = drive.readFile(normalized_name);
+        
+        // Обрезаем до реального размера файла
+        const FileDescriptor& desc = file_table.at(normalized_name);
+        if (desc.size < data.size()) {
+            data.resize(desc.size);
+        }
+        
         auto data_ptr = std::make_shared<std::vector<uint8_t>>(data);
         auto index_ptr = std::make_shared<size_t>(0);
         auto generator = [data_ptr, index_ptr]() -> uint8_t {
