@@ -3,21 +3,29 @@
 
 #include "Memory/MemoryBlock.hpp"
 #include "LazySequence/SimpleLazySequence.hpp"
+#include "CString/cstring_bridge.hpp"
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <cstdint>
 
-// Класс HardDrive - имитация жесткого диска
+// имитация жесткого диска
 class HardDrive {
 private:
     MemoryBlock storage;
-    // Маппинг имени файла на список блоков, которые он занимает
+    // структура мапа имени файла на список блоков, которые он занимает
     std::unordered_map<std::string, std::vector<size_t>> file_blocks;
 
 public:
     HardDrive(size_t total_blocks, size_t block_size)
         : storage(total_blocks, block_size) {}
+
+        
+    void writeFile(const String* filename,
+                   const std::vector<uint8_t>& data,
+                   const std::vector<size_t>& allocated_blocks) {
+        writeFile(cstring_bridge::toStdString(filename), data, allocated_blocks);
+    }
 
     // Записать данные в файл, используя предварительно выделенные блоки
     void writeFile(const std::string& filename, 
@@ -57,6 +65,10 @@ public:
         file_blocks[filename] = used_blocks;
     }
 
+    std::vector<uint8_t> readFile(const String* filename) {
+        return readFile(cstring_bridge::toStdString(filename));
+    }
+
     std::vector<uint8_t> readFile(const std::string& filename) {
         if (file_blocks.find(filename) == file_blocks.end()) {
             throw std::runtime_error("File not found: " + filename);
@@ -74,10 +86,12 @@ public:
         return result;
     }
 
+    void deleteFile(const String* filename) { deleteFile(cstring_bridge::toStdString(filename)); }
     void deleteFile(const std::string& filename) {
         file_blocks.erase(filename);
     }
 
+    bool fileExists(const String* filename) const { return fileExists(cstring_bridge::toStdString(filename)); }
     bool fileExists(const std::string& filename) const {
         return file_blocks.find(filename) != file_blocks.end();
     }

@@ -4,6 +4,7 @@
 #include "Disk/HardDrive.hpp"
 #include "FileSystem/FileDescriptor.hpp"
 #include "LazySequence/SimpleLazySequence.hpp"
+#include "CString/cstring_bridge.hpp"
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -12,7 +13,7 @@
 #include <memory>
 #include <ctime>
 
-// Простая файловая система: FS = (B, F, φ)
+// Простая файловая система
 class SimpleFileSystem {
 private:
     std::vector<bool> free_blocks;
@@ -103,6 +104,23 @@ public:
         free_blocks.resize(drive.getTotalBlocks(), true);
         directory_structure["/"] = std::set<std::string>();
         initializeSystemDirectories();
+    }
+
+    // Raw CString API (String*) wrappers
+    FileDescriptor createFile(const String* name) { return createFile(cstring_bridge::toStdString(name)); }
+    void createDirectory(const String* path) { createDirectory(cstring_bridge::toStdString(path)); }
+    void deleteFile(const String* name) { deleteFile(cstring_bridge::toStdString(name)); }
+    LazySequence<uint8_t> readFile(const String* name) { return readFile(cstring_bridge::toStdString(name)); }
+    void writeFile(const String* name, LazySequence<uint8_t> data) { writeFile(cstring_bridge::toStdString(name), data); }
+    bool fileExists(const String* name) const { return fileExists(cstring_bridge::toStdString(name)); }
+
+    // Возвращает heap String* элементы (нужно освобождать через cstring_bridge::destroyString()).
+    std::vector<String*> listDirectoryC(const String* path) {
+        const std::vector<std::string> entries = listDirectory(cstring_bridge::toStdString(path));
+        std::vector<String*> result;
+        result.reserve(entries.size());
+        for (const auto& e : entries) result.push_back(cstring_bridge::makeString(e));
+        return result;
     }
 
     FileDescriptor createFile(const std::string& name) {

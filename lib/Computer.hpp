@@ -11,11 +11,12 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include "CString/cstring_bridge.hpp"
 
-/**
- * Главный класс компьютера
- * Компьютер = [CPU] + [Память] + [BIOS] + [Диск] + [ФС]
- */
+
+//Главный класс компьютера
+//Компьютер = [CPU] + [Память] + [BIOS] + [Диск] + [ФС]
+
 class Computer {
 private:
     MemoryBlock ram;
@@ -87,32 +88,44 @@ public:
         return powered_on;
     }
 
-    void loadOS(const std::string& os_name) {
+    // CString-first API
+    void loadOS(const String* os_name) {
         if (!powered_on) {
             throw std::runtime_error("Computer is not powered on");
         }
         
         // Загрузка ОС с диска
         if (!filesystem.fileExists(os_name)) {
-            throw std::runtime_error("OS file not found: " + os_name);
+            throw std::runtime_error("OS file not found: " + cstring_bridge::toStdString(os_name));
         }
         
         // В упрощенной версии просто проверяем наличие файла
         // В реальной системе здесь была бы загрузка в память и передача управления
     }
 
-    void runCommand(const std::string& command) {
+    void runCommand(const String* command) {
         if (!powered_on) {
             throw std::runtime_error("Computer is not powered on");
         }
         
         // Упрощенная реализация выполнения команд
-        // В реальной системе здесь был бы интерпретатор команд ОС
-        if (command == "ls") {
+        if (cstring_bridge::equalsLit(command, "ls")) {
             // Список файлов
-            std::vector<std::string> files = filesystem.listDirectory("/");
-            // В реальной системе здесь был бы вывод
+            String* root = cstring_bridge::makeString("/");
+            (void)filesystem.listDirectoryC(root);
+            cstring_bridge::destroyString(root);
         }
+    }
+
+    void loadOS(const std::string& os_name) {
+        String* tmp = cstring_bridge::makeString(os_name);
+        loadOS(tmp);
+        cstring_bridge::destroyString(tmp);
+    }
+    void runCommand(const std::string& command) {
+        String* tmp = cstring_bridge::makeString(command);
+        runCommand(tmp);
+        cstring_bridge::destroyString(tmp);
     }
 
     // Геттеры для доступа к компонентам (для тестирования)

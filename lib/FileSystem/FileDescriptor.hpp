@@ -5,9 +5,7 @@
 #include <ctime>
 #include <cstddef>
 
-/**
- * Дескриптор файла
- */
+//Дескриптор файла
 struct FileDescriptor {
     std::string name;
     size_t size;

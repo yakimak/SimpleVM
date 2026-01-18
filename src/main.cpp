@@ -6,21 +6,22 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include "CString/cstring_bridge.hpp"
 
 // Компьютер = [CPU] + [Память] + [BIOS] + [Диск] + [ФС]
 
 // Функция для разбиения строки на токены
-std::vector<std::string> splitCommand(const std::string& input) {
-    std::vector<std::string> tokens;
+std::vector<String*> splitCommandC(const std::string& input) {
+    std::vector<String*> tokens;
     std::istringstream iss(input);
     std::string token;
     while (iss >> token) {
-        tokens.push_back(token);
+        tokens.push_back(cstring_bridge::makeString(token));
     }
     return tokens;
 }
 
-// Function to display help
+// Функция для вывода help
 void printHelp() {
     std::cout << "\n=== SimpleVM Shell Commands ===" << std::endl;
     std::cout << "  help              - Show this help message" << std::endl;
@@ -61,26 +62,33 @@ void printStatus(Computer& computer) {
 }
 
 // Функция для выполнения команды ls
-void cmdLs(SimpleFileSystem& fs, const std::vector<std::string>& args) {
-    std::string path = args.size() > 1 ? args[1] : "/";
-    if (path.back() != '/' && path != "/") path += "/";
+void cmdLs(SimpleFileSystem& fs, const std::vector<String*>& args) {
+    String* path = args.size() > 1 ? args[1] : cstring_bridge::makeString("/");
+    std::string path_std = cstring_bridge::toStdString(path);
+    if (!path_std.empty() && path_std.back() != '/' && path_std != "/") path_std += "/";
+    if (args.size() <= 1) {
+        cstring_bridge::destroyString(path);
+        path = cstring_bridge::makeString(path_std);
+    }
     
     try {
-        std::vector<std::string> entries = fs.listDirectory(path);
+        std::vector<String*> entries = fs.listDirectoryC(path);
         if (entries.empty()) {
             std::cout << "Directory is empty." << std::endl;
         } else {
             for (const auto& entry : entries) {
-                std::cout << "  " << entry << std::endl;
+                std::cout << "  " << cstring_bridge::toStdString(entry) << std::endl;
             }
         }
+        for (auto* e : entries) cstring_bridge::destroyString(e);
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
+    if (args.size() <= 1) cstring_bridge::destroyString(path);
 }
 
 // Функция для выполнения команды cat
-void cmdCat(SimpleFileSystem& fs, const std::vector<std::string>& args) {
+void cmdCat(SimpleFileSystem& fs, const std::vector<String*>& args) {
     if (args.size() < 2) {
         std::cerr << "Usage: cat <file>" << std::endl;
         return;
@@ -98,8 +106,8 @@ void cmdCat(SimpleFileSystem& fs, const std::vector<std::string>& args) {
 }
 
 // Функция для выполнения команды echo
-void cmdEcho(SimpleFileSystem& fs, const std::vector<std::string>& args) {
-    if (args.size() < 4 || args[args.size() - 2] != ">") {
+void cmdEcho(SimpleFileSystem& fs, const std::vector<String*>& args) {
+    if (args.size() < 4 || !cstring_bridge::equalsLit(args[args.size() - 2], ">")) {
         std::cerr << "Usage: echo <text> > <file>" << std::endl;
         return;
     }
@@ -108,10 +116,10 @@ void cmdEcho(SimpleFileSystem& fs, const std::vector<std::string>& args) {
     std::string text;
     for (size_t i = 1; i < args.size() - 2; ++i) {
         if (i > 1) text += " ";
-        text += args[i];
+        text += cstring_bridge::toStdString(args[i]);
     }
     
-    std::string filename = args.back();
+    String* filename = args.back();
     
     try {
         // Преобразуем текст в вектор байтов
@@ -131,7 +139,7 @@ void cmdEcho(SimpleFileSystem& fs, const std::vector<std::string>& args) {
         
         LazySequence<uint8_t> write_stream(write_gen, write_has_next);
         fs.writeFile(filename, write_stream);
-        std::cout << "Text written to " << filename << std::endl;
+        std::cout << "Text written to " << cstring_bridge::toStdString(filename) << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
@@ -161,79 +169,80 @@ int main() {
             
             if (input.empty()) continue;
             
-            std::vector<std::string> args = splitCommand(input);
+            std::vector<String*> args = splitCommandC(input);
             if (args.empty()) continue;
             
-            std::string command = args[0];
+            String* command = args[0];
             
-            if (command == "exit" || command == "quit") {
+            if (cstring_bridge::equalsLit(command, "exit") || cstring_bridge::equalsLit(command, "quit")) {
                 std::cout << "Shutting down..." << std::endl;
                 computer.powerOff();
+                for (auto* a : args) cstring_bridge::destroyString(a);
                 break;
             }
-            else if (command == "help") {
+            else if (cstring_bridge::equalsLit(command, "help")) {
                 printHelp();
             }
-            else if (command == "status") {
+            else if (cstring_bridge::equalsLit(command, "status")) {
                 printStatus(computer);
             }
-            else if (command == "ls") {
+            else if (cstring_bridge::equalsLit(command, "ls")) {
                 cmdLs(fs, args);
             }
-            else if (command == "cat") {
+            else if (cstring_bridge::equalsLit(command, "cat")) {
                 cmdCat(fs, args);
             }
-            else if (command == "touch") {
+            else if (cstring_bridge::equalsLit(command, "touch")) {
                 if (args.size() < 2) {
                     std::cerr << "Usage: touch <file>" << std::endl;
                 } else {
                     try {
                         fs.createFile(args[1]);
-                        std::cout << "File created: " << args[1] << std::endl;
+                        std::cout << "File created: " << cstring_bridge::toStdString(args[1]) << std::endl;
                     } catch (const std::exception& e) {
                         std::cerr << "Error: " << e.what() << std::endl;
                     }
                 }
             }
-            else if (command == "mkdir") {
+            else if (cstring_bridge::equalsLit(command, "mkdir")) {
                 if (args.size() < 2) {
                     std::cerr << "Usage: mkdir <directory>" << std::endl;
                 } else {
                     try {
                         fs.createDirectory(args[1]);
-                        std::cout << "Directory created: " << args[1] << std::endl;
+                        std::cout << "Directory created: " << cstring_bridge::toStdString(args[1]) << std::endl;
                     } catch (const std::exception& e) {
                         std::cerr << "Error: " << e.what() << std::endl;
                     }
                 }
             }
-            else if (command == "rm") {
+            else if (cstring_bridge::equalsLit(command, "rm")) {
                 if (args.size() < 2) {
                     std::cerr << "Usage: rm <file>" << std::endl;
                 } else {
                     try {
                         fs.deleteFile(args[1]);
-                        std::cout << "File deleted: " << args[1] << std::endl;
+                        std::cout << "File deleted: " << cstring_bridge::toStdString(args[1]) << std::endl;
                     } catch (const std::exception& e) {
                         std::cerr << "Error: " << e.what() << std::endl;
                     }
                 }
             }
-            else if (command == "echo") {
+            else if (cstring_bridge::equalsLit(command, "echo")) {
                 cmdEcho(fs, args);
             }
-            else if (command == "cpu") {
+            else if (cstring_bridge::equalsLit(command, "cpu")) {
                 if (args.size() < 2) {
                     std::cerr << "Usage: cpu <status|step|push|pop|stack>" << std::endl;
-                } else if (args[1] == "status") {
+                } else if (cstring_bridge::equalsLit(args[1], "status")) {
                     std::cout << "CPU Program Counter: " << cpu.getProgramCounter() << std::endl;
                     std::cout << "CPU Stack Size: " << cpu.getStackSize() << std::endl;
                     std::cout << "Stack Empty: " << (cpu.isStackEmpty() ? "Yes" : "No") << std::endl;
-                } else if (args[1] == "step") {
+                } else if (cstring_bridge::equalsLit(args[1], "step")) {
                     int steps = 1;
                     if (args.size() > 2) {
                         try {
-                            steps = std::stoi(args[2]);
+                            steps = std::stoi(cstring_bridge::toStdString(args[2]));
                         } catch (...) {
                             std::cerr << "Invalid number of steps" << std::endl;
                             continue;
@@ -243,34 +252,34 @@ int main() {
                         cpu.executeNext();
                     }
                     std::cout << "Executed " << steps << " instruction(s)" << std::endl;
-                } else if (args[1] == "push") {
+                } else if (cstring_bridge::equalsLit(args[1], "push")) {
                     if (args.size() < 3) {
                         std::cerr << "Usage: cpu push <value>" << std::endl;
                     } else {
                         try {
-                            int value = std::stoi(args[2]);
+                            int value = std::stoi(cstring_bridge::toStdString(args[2]));
                             cpu.push(value);
                             std::cout << "Pushed " << value << " to stack" << std::endl;
                         } catch (...) {
                             std::cerr << "Invalid value" << std::endl;
                         }
                     }
-                } else if (args[1] == "pop") {
+                } else if (cstring_bridge::equalsLit(args[1], "pop")) {
                     try {
                         int value = cpu.pop();
                         std::cout << "Popped: " << value << std::endl;
                     } catch (const std::exception& e) {
                         std::cerr << "Error: " << e.what() << std::endl;
                     }
-                } else if (args[1] == "stack") {
+                } else if (cstring_bridge::equalsLit(args[1], "stack")) {
                     std::cout << "Stack size: " << cpu.getStackSize() << std::endl;
                     // Примечание: для полного просмотра стека нужен дополнительный метод
                 } else {
-                    std::cerr << "Unknown CPU command: " << args[1] << std::endl;
+                    std::cerr << "Unknown CPU command: " << cstring_bridge::toStdString(args[1]) << std::endl;
                 }
             }
-            else if (command == "mem" || command == "memory") {
-                if (args.size() < 2 || args[1] != "info") {
+            else if (cstring_bridge::equalsLit(command, "mem") || cstring_bridge::equalsLit(command, "memory")) {
+                if (args.size() < 2 || !cstring_bridge::equalsLit(args[1], "info")) {
                     std::cerr << "Usage: mem info" << std::endl;
                 } else {
                     MemoryBlock& ram = computer.getRAM();
@@ -280,8 +289,8 @@ int main() {
                     std::cout << "  Total capacity: " << (ram.getTotalBlocks() * ram.getBlockSize()) << " bytes" << std::endl;
                 }
             }
-            else if (command == "disk") {
-                if (args.size() < 2 || args[1] != "info") {
+            else if (cstring_bridge::equalsLit(command, "disk")) {
+                if (args.size() < 2 || !cstring_bridge::equalsLit(args[1], "info")) {
                     std::cerr << "Usage: disk info" << std::endl;
                 } else {
                     HardDrive& hdd = computer.getHDD();
@@ -291,14 +300,16 @@ int main() {
                     std::cout << "  Total capacity: " << (hdd.getTotalBlocks() * hdd.getBlockSize()) << " bytes" << std::endl;
                 }
             }
-            else if (command == "poweroff") {
+            else if (cstring_bridge::equalsLit(command, "poweroff")) {
                 computer.powerOff();
                 std::cout << "Computer powered off." << std::endl;
             }
             else {
-                std::cerr << "Unknown command: " << command << std::endl;
+                std::cerr << "Unknown command: " << cstring_bridge::toStdString(command) << std::endl;
                 std::cerr << "Type 'help' for available commands." << std::endl;
             }
+
+            for (auto* a : args) cstring_bridge::destroyString(a);
         }
         
     } catch (const std::exception& e) {
