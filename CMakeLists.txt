@@ -16,7 +16,10 @@ target_include_directories(cstring PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/CStrin
 target_compile_features(LazySequence INTERFACE cxx_std_17)
 
 # Исполняемый файл
-add_executable(SimpleVM ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+add_executable(SimpleVM
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/monitor.cpp
+)
 target_include_directories(SimpleVM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 target_include_directories(SimpleVM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/FileSystem/src)
 target_link_libraries(SimpleVM PUBLIC cstring LazySequence)

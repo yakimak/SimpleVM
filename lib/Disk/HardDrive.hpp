@@ -99,6 +99,11 @@ public:
 
     size_t getTotalBlocks() const { return storage.getTotalBlocks(); }
     size_t getBlockSize() const { return storage.getBlockSize(); }
+
+    // Простая проверка исправности (self-test).
+    bool selfTest() const {
+        return storage.selfTest();
+    }
 };
 
 #endif // HARD_DRIVE_HPP

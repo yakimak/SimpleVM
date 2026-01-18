@@ -7,6 +7,7 @@
 #include <stack>
 #include <stdexcept>
 #include <cstddef>
+#include <string>
 
 /**
  * Стековый процессор
@@ -18,10 +19,51 @@ private:
     std::stack<int> data_stack;
     size_t program_counter;
     LazySequence<Command>& program_stream;
+public:
+    enum class Mode {
+        BIOS16,
+        Protected32,
+        Long64
+    };
+
+private:
+    Mode mode_ = Mode::Long64;
 
 public:
     StackMachine(LazySequence<Command>& program)
         : program_stream(program), program_counter(0) {}
+
+    void setMode(Mode m) { mode_ = m; }
+    Mode getMode() const { return mode_; }
+    int getModeBits() const {
+        switch (mode_) {
+            case Mode::BIOS16: return 16;
+            case Mode::Protected32: return 32;
+            case Mode::Long64: return 64;
+        }
+        return 64;
+    }
+
+    bool isInstructionSupported(CommandType t) const {
+        // Упрощённая модель:
+        // - 16-bit (BIOS): минимальный набор
+        // - 32-bit: добавляем MUL/DIV
+        // - 64-bit: полный набор
+        switch (mode_) {
+            case Mode::BIOS16:
+                return t == CommandType::PUSH || t == CommandType::POP ||
+                       t == CommandType::ADD  || t == CommandType::SUB ||
+                       t == CommandType::HALT;
+            case Mode::Protected32:
+                return t == CommandType::PUSH || t == CommandType::POP ||
+                       t == CommandType::ADD  || t == CommandType::SUB ||
+                       t == CommandType::MUL  || t == CommandType::DIV ||
+                       t == CommandType::HALT;
+            case Mode::Long64:
+                return true;
+        }
+        return true;
+    }
 
     void executeNext() {
         // Новый LazySequence: команда берётся по индексу program_counter.
@@ -32,6 +74,9 @@ public:
         }
 
         Command cmd = program_stream.Get((int)program_counter);
+        if (!isInstructionSupported(cmd.type)) {
+            throw std::runtime_error("Instruction not supported in " + std::to_string(getModeBits()) + "-bit mode");
+        }
         switch(cmd.type) {
             case CommandType::PUSH:
                 data_stack.push(cmd.operand);
@@ -104,6 +149,9 @@ public:
     size_t getProgramCounter() const { return program_counter; }
     size_t getStackSize() const { return data_stack.size(); }
     bool isStackEmpty() const { return data_stack.empty(); }
+
+    // Простая проверка исправности (self-test).
+    bool selfTest() const { return true; }
 };
 
 #endif // STACK_MACHINE_HPP

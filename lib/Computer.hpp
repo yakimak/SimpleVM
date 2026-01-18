@@ -20,12 +20,13 @@
 
 class Computer {
 private:
-    MemoryBlock ram;
-    HardDrive hdd;
+    std::unique_ptr<MemoryBlock> ram;
+    std::unique_ptr<HardDrive> hdd;
     Bios bios;
-    vfs::VirtualFileSystem filesystem;
+    std::unique_ptr<vfs::VirtualFileSystem> filesystem;
     std::unique_ptr<StackMachine> cpu;
     bool powered_on;
+    bool os_loaded;
     
     // Программа загрузки (bootloader)
     std::shared_ptr<LazySequence<Command>> bootloader_stream;
@@ -39,7 +40,7 @@ private:
             Command(CommandType::HALT)
         };
 
-        // Новый LazySequence: конечная последовательность команд
+
         bootloader_stream = std::make_shared<LazySequence<Command>>(boot_commands.data(),
                                                                     (int)boot_commands.size());
     }
@@ -59,48 +60,91 @@ private:
             // MakeDirectory создаёт только последнюю директорию; родитель создаётся автоматически.
             // Если директория уже есть, Resolve вернёт её — тогда пропускаем.
             const std::string p = normalizePath(dir);
-            if (filesystem.Resolve(p) == nullptr) {
-                filesystem.MakeDirectory(p);
+            if (filesystem->Resolve(p) == nullptr) {
+                filesystem->MakeDirectory(p);
             }
         }
     }
 
     bool vfsFileExists(const std::string& path) const {
         const std::string p = normalizePath(path);
-        vfs::Node* n = filesystem.Resolve(p);
+        if (!filesystem) return false;
+        vfs::Node* n = filesystem->Resolve(p);
         return n && n->GetType() == vfs::NodeType::File;
+    }
+
+    void bootloaderStage() {
+        // Bootloader получает управление после BIOS POST.
+        // Он переводит CPU в 32-bit режим, затем в 64-bit, повторно проверяет систему
+        // и "загружает ОС" (в упрощённой модели — ставит флаг).
+        if (!cpu || !ram || !hdd || !filesystem) {
+            throw std::runtime_error("Bootloader: components are not initialized");
+        }
+
+        cpu->setMode(StackMachine::Mode::Protected32);
+        cpu->setMode(StackMachine::Mode::Long64);
+
+        const bool ok = ram->selfTest() && hdd->selfTest() && cpu->selfTest() && filesystem->selfTest();
+        if (!ok) {
+            throw std::runtime_error("Bootloader: self-test failed");
+        }
+        os_loaded = true;
     }
 
 public:
     Computer()
-        : ram(1024, 64),  // 1024 блока по 64 байта каждый
-          hdd(4096, 512), // 4096 блоков по 512 байт
-          bios(ram, hdd),
+        : ram(nullptr),
+          hdd(nullptr),
+          bios(),
+          filesystem(nullptr),
+          cpu(nullptr),
           powered_on(false),
+          os_loaded(false),
           bootloader_stream(nullptr) {
-        createBootloader();
-        cpu = std::make_unique<StackMachine>(*bootloader_stream);
-        initializeSystemDirectories();
     }
 
     ~Computer() = default;
 
     void powerOn() {
         powered_on = true;
-        bios.initialize();
-        bios.loadBootloader();
-        
-        // Пересоздаем bootloader stream для выполнения
+        os_loaded = false;
+
+        // BIOS инициализирует системы после включения (в этой модели —
+        // компоненты создаёт Computer, а BIOS переводит CPU в 16-bit и делает POST).
+        ram = std::make_unique<MemoryBlock>(1024, 64);
+        hdd = std::make_unique<HardDrive>(4096, 512);
+        filesystem = std::make_unique<vfs::VirtualFileSystem>();
+        initializeSystemDirectories();
+
         createBootloader();
         cpu = std::make_unique<StackMachine>(*bootloader_stream);
+        bios.attach(*ram, *hdd, *cpu, *filesystem);
+        bios.initializeSystems();            // CPU = 16-bit
+        if (!bios.runPOST()) {
+            powered_on = false;
+            throw std::runtime_error("BIOS POST failed");
+        }
+
+        // Передача управления bootloader
+        bootloaderStage();
     }
 
     void powerOff() {
         powered_on = false;
+        os_loaded = false;
+        bios.reset();
+        cpu.reset();
+        filesystem.reset();
+        hdd.reset();
+        ram.reset();
     }
 
     bool isPoweredOn() const {
         return powered_on;
+    }
+
+    bool isOSLoaded() const {
+        return os_loaded;
     }
 
     // CString-first API
@@ -139,10 +183,22 @@ public:
     }
 
     // Геттеры для доступа к компонентам (для тестирования)
-    MemoryBlock& getRAM() { return ram; }
-    HardDrive& getHDD() { return hdd; }
-    vfs::VirtualFileSystem& getFileSystem() { return filesystem; }
-    StackMachine& getCPU() { return *cpu; }
+    MemoryBlock& getRAM() {
+        if (!powered_on || !ram) throw std::runtime_error("RAM is not initialized");
+        return *ram;
+    }
+    HardDrive& getHDD() {
+        if (!powered_on || !hdd) throw std::runtime_error("HDD is not initialized");
+        return *hdd;
+    }
+    vfs::VirtualFileSystem& getFileSystem() {
+        if (!powered_on || !filesystem) throw std::runtime_error("FileSystem is not initialized");
+        return *filesystem;
+    }
+    StackMachine& getCPU() {
+        if (!powered_on || !cpu) throw std::runtime_error("CPU is not initialized");
+        return *cpu;
+    }
 };
 
 #endif // COMPUTER_HPP

@@ -183,6 +183,9 @@ public:
 
     DirectoryNode* GetRoot() const { return root_.get(); }
 
+    // Простая проверка исправности (self-test).
+    bool selfTest() const { return root_ != nullptr; }
+
     // Прикрепить физический файл по виртуальному пути, вида "/dir1/dir2/file.txt".
     // При необходимости создаёт недостающие директории.
     FileNode* AttachFile(const std::string& virtual_path,

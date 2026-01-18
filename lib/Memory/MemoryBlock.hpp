@@ -44,6 +44,12 @@ public:
 
     size_t getBlockSize() const { return block_size; }
     size_t getTotalBlocks() const { return total_blocks; }
+
+    // Простая проверка исправности (self-test).
+    // В реальной системе здесь мог бы быть тест чтения/записи блоков.
+    bool selfTest() const {
+        return total_blocks > 0 && block_size > 0 && blocks.size() == total_blocks;
+    }
 };
 
 #endif // MEMORY_BLOCK_HPP
