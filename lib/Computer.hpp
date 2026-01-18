@@ -77,13 +77,6 @@ public:
         // Пересоздаем bootloader stream для выполнения
         createBootloader();
         cpu = std::make_unique<StackMachine>(*bootloader_stream);
-        
-        // Автоматически выполняем bootloader при включении
-        // Bootloader: PUSH 1, PUSH 2, ADD, HALT
-        while (cpu->getProgramCounter() < 3 && bootloader_stream->hasNext()) {
-            cpu->executeNext();
-        }
-        // После выполнения bootloader в стеке остается результат (3)
     }
 
     void powerOff() {
