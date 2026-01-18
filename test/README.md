@@ -8,7 +8,7 @@
 - `test_memory.cpp` - Тесты для класса MemoryBlock
 - `test_cpu.cpp` - Тесты для стекового процессора (StackMachine)
 - `test_disk.cpp` - Тесты для жесткого диска (HardDrive)
-- `test_filesystem.cpp` - Тесты для файловой системы (SimpleFileSystem)
+- `test_filesystem.cpp` - Тесты для файловой системы (vfs::VirtualFileSystem)
 - `test_computer.cpp` - Тесты для главного класса Computer
 
 ## Сборка тестов
@@ -92,14 +92,13 @@ cd build
 - ✅ Перезапись файлов
 - ✅ Обработка ошибок
 
-### SimpleFileSystem (test_filesystem.cpp)
-- ✅ Создание файлов и директорий
-- ✅ Запись и чтение файлов
-- ✅ Удаление файлов
-- ✅ Листинг директорий
+### VirtualFileSystem (test_filesystem.cpp)
+- ✅ Создание файлов и директорий (AttachFile/MakeDirectory)
+- ✅ Удаление файлов/узлов (Remove)
+- ✅ Листинг директорий (через дерево)
 - ✅ Вложенные директории
-- ✅ Системные пути
-- ✅ Обработка ошибок
+- ✅ Поиск по имени (FindFilesByName)
+- ✅ Перемещение/переименование (Move)
 
 ### Computer (test_computer.cpp)
 - ✅ Создание компьютера

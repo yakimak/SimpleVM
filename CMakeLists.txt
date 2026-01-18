@@ -18,6 +18,7 @@ target_compile_features(LazySequence INTERFACE cxx_std_17)
 # Исполняемый файл
 add_executable(SimpleVM ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 target_include_directories(SimpleVM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+target_include_directories(SimpleVM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/FileSystem/src)
 target_link_libraries(SimpleVM PUBLIC cstring LazySequence)
 
 # Тесты
@@ -27,6 +28,7 @@ enable_testing()
 add_library(test_common INTERFACE)
 target_include_directories(test_common INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 target_include_directories(test_common INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/test)
+target_include_directories(test_common INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/lib/FileSystem/src)
 target_link_libraries(test_common INTERFACE cstring LazySequence)
 
 # Функция для добавления теста с поддержкой multi-config

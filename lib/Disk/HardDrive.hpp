@@ -2,7 +2,8 @@
 #define HARD_DRIVE_HPP
 
 #include "Memory/MemoryBlock.hpp"
-#include "LazySequence/SimpleLazySequence.hpp"
+#include "LazySequence/Sequence.h"
+#include "LazySequence/LazySequence.h"
 #include "CString/cstring_bridge.hpp"
 #include <string>
 #include <unordered_map>

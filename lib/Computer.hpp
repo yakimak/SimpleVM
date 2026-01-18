@@ -5,8 +5,9 @@
 #include "Memory/MemoryBlock.hpp"
 #include "BIOS/Bios.hpp"
 #include "Disk/HardDrive.hpp"
-#include "FileSystem/SimpleFileSystem.hpp"
-#include "LazySequence/SimpleLazySequence.hpp"
+#include "VirtualFS/virtual_file_system.h"
+#include "LazySequence/Sequence.h"
+#include "LazySequence/LazySequence.h"
 #include "CPU/Command.hpp"
 #include <string>
 #include <vector>
@@ -22,7 +23,7 @@ private:
     MemoryBlock ram;
     HardDrive hdd;
     Bios bios;
-    SimpleFileSystem filesystem;
+    vfs::VirtualFileSystem filesystem;
     std::unique_ptr<StackMachine> cpu;
     bool powered_on;
     
@@ -37,23 +38,37 @@ private:
             Command(CommandType::ADD),
             Command(CommandType::HALT)
         };
-        
-        // Используем shared_ptr для общего состояния индекса
-        auto boot_index = std::make_shared<size_t>(0);
-        auto commands_ptr = std::make_shared<std::vector<Command>>(boot_commands);
-        
-        auto gen = [commands_ptr, boot_index]() -> Command {
-            if (*boot_index < commands_ptr->size()) {
-                return (*commands_ptr)[(*boot_index)++];
+
+        // Новый LazySequence: конечная последовательность команд
+        bootloader_stream = std::make_shared<LazySequence<Command>>(boot_commands.data(),
+                                                                    (int)boot_commands.size());
+    }
+
+    static std::string normalizePath(std::string p) {
+        if (p.empty()) return "/";
+        if (p[0] != '/') p = "/" + p;
+        while (p.size() > 1 && p.back() == '/') p.pop_back();
+        return p;
+    }
+
+    void initializeSystemDirectories() {
+        const std::vector<std::string> system_dirs = {
+            "/bin", "/usr", "/usr/bin", "/usr/lib", "/lib", "/etc", "/home", "/tmp", "/var", "/var/log", "/boot"
+        };
+        for (const auto& dir : system_dirs) {
+            // MakeDirectory создаёт только последнюю директорию; родитель создаётся автоматически.
+            // Если директория уже есть, Resolve вернёт её — тогда пропускаем.
+            const std::string p = normalizePath(dir);
+            if (filesystem.Resolve(p) == nullptr) {
+                filesystem.MakeDirectory(p);
             }
-            return Command(CommandType::HALT);
-        };
-        
-        auto has_nxt = [commands_ptr, boot_index]() -> bool {
-            return *boot_index < commands_ptr->size();
-        };
-        
-        bootloader_stream = std::make_shared<LazySequence<Command>>(gen, has_nxt);
+        }
+    }
+
+    bool vfsFileExists(const std::string& path) const {
+        const std::string p = normalizePath(path);
+        vfs::Node* n = filesystem.Resolve(p);
+        return n && n->GetType() == vfs::NodeType::File;
     }
 
 public:
@@ -61,11 +76,11 @@ public:
         : ram(1024, 64),  // 1024 блока по 64 байта каждый
           hdd(4096, 512), // 4096 блоков по 512 байт
           bios(ram, hdd),
-          filesystem(hdd),
           powered_on(false),
           bootloader_stream(nullptr) {
         createBootloader();
         cpu = std::make_unique<StackMachine>(*bootloader_stream);
+        initializeSystemDirectories();
     }
 
     ~Computer() = default;
@@ -95,7 +110,7 @@ public:
         }
         
         // Загрузка ОС с диска
-        if (!filesystem.fileExists(os_name)) {
+        if (!vfsFileExists(cstring_bridge::toStdString(os_name))) {
             throw std::runtime_error("OS file not found: " + cstring_bridge::toStdString(os_name));
         }
         
@@ -108,13 +123,8 @@ public:
             throw std::runtime_error("Computer is not powered on");
         }
         
-        // Упрощенная реализация выполнения команд
-        if (cstring_bridge::equalsLit(command, "ls")) {
-            // Список файлов
-            String* root = cstring_bridge::makeString("/");
-            (void)filesystem.listDirectoryC(root);
-            cstring_bridge::destroyString(root);
-        }
+        // Оставлено пустым: интерактивная оболочка реализована в src/main.cpp
+        (void)command;
     }
 
     void loadOS(const std::string& os_name) {
@@ -131,7 +141,7 @@ public:
     // Геттеры для доступа к компонентам (для тестирования)
     MemoryBlock& getRAM() { return ram; }
     HardDrive& getHDD() { return hdd; }
-    SimpleFileSystem& getFileSystem() { return filesystem; }
+    vfs::VirtualFileSystem& getFileSystem() { return filesystem; }
     StackMachine& getCPU() { return *cpu; }
 };
 

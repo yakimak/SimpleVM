@@ -1,0 +1,44 @@
+[
+{
+  "directory": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/build",
+  "command": "/usr/bin/clang  -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/CString\" -g -o CMakeFiles/cstring.dir/src/string_utils.c.o -c \"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/src/string_utils.c\"",
+  "file": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/src/string_utils.c",
+  "output": "CMakeFiles/cstring.dir/src/string_utils.c.o"
+},
+{
+  "directory": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/build",
+  "command": "/usr/bin/clang++  -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/CString\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/LazySequence\" -g -std=gnu++17 -o CMakeFiles/SimpleVM.dir/src/main.cpp.o -c \"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/src/main.cpp\"",
+  "file": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/src/main.cpp",
+  "output": "CMakeFiles/SimpleVM.dir/src/main.cpp.o"
+},
+{
+  "directory": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/build",
+  "command": "/usr/bin/clang++  -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/CString\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/LazySequence\" -g -std=gnu++17 -o CMakeFiles/test_memory.dir/test/test_memory.cpp.o -c \"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test/test_memory.cpp\"",
+  "file": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test/test_memory.cpp",
+  "output": "CMakeFiles/test_memory.dir/test/test_memory.cpp.o"
+},
+{
+  "directory": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/build",
+  "command": "/usr/bin/clang++  -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/CString\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/LazySequence\" -g -std=gnu++17 -o CMakeFiles/test_cpu.dir/test/test_cpu.cpp.o -c \"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test/test_cpu.cpp\"",
+  "file": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test/test_cpu.cpp",
+  "output": "CMakeFiles/test_cpu.dir/test/test_cpu.cpp.o"
+},
+{
+  "directory": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/build",
+  "command": "/usr/bin/clang++  -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/CString\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/LazySequence\" -g -std=gnu++17 -o CMakeFiles/test_disk.dir/test/test_disk.cpp.o -c \"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test/test_disk.cpp\"",
+  "file": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test/test_disk.cpp",
+  "output": "CMakeFiles/test_disk.dir/test/test_disk.cpp.o"
+},
+{
+  "directory": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/build",
+  "command": "/usr/bin/clang++  -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/CString\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/LazySequence\" -g -std=gnu++17 -o CMakeFiles/test_filesystem.dir/test/test_filesystem.cpp.o -c \"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test/test_filesystem.cpp\"",
+  "file": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test/test_filesystem.cpp",
+  "output": "CMakeFiles/test_filesystem.dir/test/test_filesystem.cpp.o"
+},
+{
+  "directory": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/build",
+  "command": "/usr/bin/clang++  -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/CString\" -I\"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/lib/LazySequence\" -g -std=gnu++17 -o CMakeFiles/test_computer.dir/test/test_computer.cpp.o -c \"/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test/test_computer.cpp\"",
+  "file": "/Users/admin/Documents/дисциплины/3 семестр/tiger (программирование)/Boot_Loader/test/test_computer.cpp",
+  "output": "CMakeFiles/test_computer.dir/test/test_computer.cpp.o"
+}
+]

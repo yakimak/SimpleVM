@@ -1,21 +1,14 @@
 #include "test_framework.hpp"
 #include "../lib/CPU/StackMachine.hpp"
 #include "../lib/CPU/Command.hpp"
-#include "../lib/LazySequence/SimpleLazySequence.hpp"
+#include "../lib/LazySequence/Sequence.h"
+#include "../lib/LazySequence/LazySequence.h"
 #include <vector>
 #include <memory>
 
 void test_cpu_push_pop() {
     std::vector<Command> commands = {Command(CommandType::HALT)};
-    auto index = std::make_shared<size_t>(0);
-    auto cmds = std::make_shared<std::vector<Command>>(commands);
-    
-    auto gen = [cmds, index]() -> Command {
-        return Command(CommandType::HALT);
-    };
-    auto has_next = [cmds, index]() -> bool { return false; };
-    
-    LazySequence<Command> program(gen, has_next);
+    LazySequence<Command> program(commands.data(), (int)commands.size());
     StackMachine cpu(program);
     
     cpu.push(42);
@@ -36,20 +29,7 @@ void test_cpu_add() {
         Command(CommandType::HALT)
     };
     
-    auto index = std::make_shared<size_t>(0);
-    auto cmds = std::make_shared<std::vector<Command>>(commands);
-    
-    auto gen = [cmds, index]() -> Command {
-        if (*index < cmds->size()) {
-            return (*cmds)[(*index)++];
-        }
-        return Command(CommandType::HALT);
-    };
-    auto has_next = [cmds, index]() -> bool {
-        return *index < cmds->size();
-    };
-    
-    LazySequence<Command> program(gen, has_next);
+    LazySequence<Command> program(commands.data(), (int)commands.size());
     StackMachine cpu(program);
     
     cpu.executeNext(); // PUSH 5
@@ -69,20 +49,7 @@ void test_cpu_sub() {
         Command(CommandType::HALT)
     };
     
-    auto index = std::make_shared<size_t>(0);
-    auto cmds = std::make_shared<std::vector<Command>>(commands);
-    
-    auto gen = [cmds, index]() -> Command {
-        if (*index < cmds->size()) {
-            return (*cmds)[(*index)++];
-        }
-        return Command(CommandType::HALT);
-    };
-    auto has_next = [cmds, index]() -> bool {
-        return *index < cmds->size();
-    };
-    
-    LazySequence<Command> program(gen, has_next);
+    LazySequence<Command> program(commands.data(), (int)commands.size());
     StackMachine cpu(program);
     
     cpu.executeNext(); // PUSH 10
@@ -102,20 +69,7 @@ void test_cpu_mul() {
         Command(CommandType::HALT)
     };
     
-    auto index = std::make_shared<size_t>(0);
-    auto cmds = std::make_shared<std::vector<Command>>(commands);
-    
-    auto gen = [cmds, index]() -> Command {
-        if (*index < cmds->size()) {
-            return (*cmds)[(*index)++];
-        }
-        return Command(CommandType::HALT);
-    };
-    auto has_next = [cmds, index]() -> bool {
-        return *index < cmds->size();
-    };
-    
-    LazySequence<Command> program(gen, has_next);
+    LazySequence<Command> program(commands.data(), (int)commands.size());
     StackMachine cpu(program);
     
     cpu.executeNext(); // PUSH 6
@@ -135,20 +89,7 @@ void test_cpu_div() {
         Command(CommandType::HALT)
     };
     
-    auto index = std::make_shared<size_t>(0);
-    auto cmds = std::make_shared<std::vector<Command>>(commands);
-    
-    auto gen = [cmds, index]() -> Command {
-        if (*index < cmds->size()) {
-            return (*cmds)[(*index)++];
-        }
-        return Command(CommandType::HALT);
-    };
-    auto has_next = [cmds, index]() -> bool {
-        return *index < cmds->size();
-    };
-    
-    LazySequence<Command> program(gen, has_next);
+    LazySequence<Command> program(commands.data(), (int)commands.size());
     StackMachine cpu(program);
     
     cpu.executeNext(); // PUSH 20
@@ -168,20 +109,7 @@ void test_cpu_div_by_zero() {
         Command(CommandType::HALT)
     };
     
-    auto index = std::make_shared<size_t>(0);
-    auto cmds = std::make_shared<std::vector<Command>>(commands);
-    
-    auto gen = [cmds, index]() -> Command {
-        if (*index < cmds->size()) {
-            return (*cmds)[(*index)++];
-        }
-        return Command(CommandType::HALT);
-    };
-    auto has_next = [cmds, index]() -> bool {
-        return *index < cmds->size();
-    };
-    
-    LazySequence<Command> program(gen, has_next);
+    LazySequence<Command> program(commands.data(), (int)commands.size());
     StackMachine cpu(program);
     
     cpu.executeNext(); // PUSH 10
@@ -196,20 +124,7 @@ void test_cpu_dup() {
         Command(CommandType::HALT)
     };
     
-    auto index = std::make_shared<size_t>(0);
-    auto cmds = std::make_shared<std::vector<Command>>(commands);
-    
-    auto gen = [cmds, index]() -> Command {
-        if (*index < cmds->size()) {
-            return (*cmds)[(*index)++];
-        }
-        return Command(CommandType::HALT);
-    };
-    auto has_next = [cmds, index]() -> bool {
-        return *index < cmds->size();
-    };
-    
-    LazySequence<Command> program(gen, has_next);
+    LazySequence<Command> program(commands.data(), (int)commands.size());
     StackMachine cpu(program);
     
     cpu.executeNext(); // PUSH 5
@@ -230,20 +145,7 @@ void test_cpu_swap() {
         Command(CommandType::HALT)
     };
     
-    auto index = std::make_shared<size_t>(0);
-    auto cmds = std::make_shared<std::vector<Command>>(commands);
-    
-    auto gen = [cmds, index]() -> Command {
-        if (*index < cmds->size()) {
-            return (*cmds)[(*index)++];
-        }
-        return Command(CommandType::HALT);
-    };
-    auto has_next = [cmds, index]() -> bool {
-        return *index < cmds->size();
-    };
-    
-    LazySequence<Command> program(gen, has_next);
+    LazySequence<Command> program(commands.data(), (int)commands.size());
     StackMachine cpu(program);
     
     cpu.executeNext(); // PUSH 1
@@ -264,20 +166,7 @@ void test_cpu_program_counter() {
         Command(CommandType::HALT)
     };
     
-    auto index = std::make_shared<size_t>(0);
-    auto cmds = std::make_shared<std::vector<Command>>(commands);
-    
-    auto gen = [cmds, index]() -> Command {
-        if (*index < cmds->size()) {
-            return (*cmds)[(*index)++];
-        }
-        return Command(CommandType::HALT);
-    };
-    auto has_next = [cmds, index]() -> bool {
-        return *index < cmds->size();
-    };
-    
-    LazySequence<Command> program(gen, has_next);
+    LazySequence<Command> program(commands.data(), (int)commands.size());
     StackMachine cpu(program);
     
     ASSERT_EQ(0, cpu.getProgramCounter());
@@ -289,15 +178,7 @@ void test_cpu_program_counter() {
 
 void test_cpu_pop_empty_stack() {
     std::vector<Command> commands = {Command(CommandType::HALT)};
-    auto index = std::make_shared<size_t>(0);
-    auto cmds = std::make_shared<std::vector<Command>>(commands);
-    
-    auto gen = [cmds, index]() -> Command {
-        return Command(CommandType::HALT);
-    };
-    auto has_next = [cmds, index]() -> bool { return false; };
-    
-    LazySequence<Command> program(gen, has_next);
+    LazySequence<Command> program(commands.data(), (int)commands.size());
     StackMachine cpu(program);
     
     ASSERT_THROWS(cpu.pop(), std::runtime_error);

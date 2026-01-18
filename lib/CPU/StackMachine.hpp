@@ -1,7 +1,8 @@
 #ifndef STACK_MACHINE_HPP
 #define STACK_MACHINE_HPP
 
-#include "LazySequence/SimpleLazySequence.hpp"
+#include "LazySequence/Sequence.h"
+#include "LazySequence/LazySequence.h"
 #include "CPU/Command.hpp"
 #include <stack>
 #include <stdexcept>
@@ -23,9 +24,14 @@ public:
         : program_stream(program), program_counter(0) {}
 
     void executeNext() {
-        if (!program_stream.hasNext()) return;
+        // Новый LazySequence: команда берётся по индексу program_counter.
+        // Для конечной программы — останавливаемся по длине.
+        if (!program_stream.IsInfinite()) {
+            Cardinal len = program_stream.GetLength();
+            if (len.IsFinite() && program_counter >= len.GetFiniteValue()) return;
+        }
 
-        Command cmd = program_stream.next();
+        Command cmd = program_stream.Get((int)program_counter);
         switch(cmd.type) {
             case CommandType::PUSH:
                 data_stack.push(cmd.operand);

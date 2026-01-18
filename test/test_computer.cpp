@@ -39,9 +39,10 @@ void test_computer_filesystem_access() {
     Computer computer;
     computer.powerOn();
     
-    SimpleFileSystem& fs = computer.getFileSystem();
-    std::vector<std::string> root_dirs = fs.listDirectory("/");
-    ASSERT_TRUE(root_dirs.size() > 0);
+    vfs::VirtualFileSystem& fs = computer.getFileSystem();
+    vfs::Node* bin = fs.Resolve("/bin");
+    ASSERT_TRUE(bin != nullptr);
+    ASSERT_TRUE(bin->GetType() == vfs::NodeType::Directory);
 }
 
 void test_computer_cpu_access() {
@@ -92,15 +93,15 @@ void test_computer_filesystem_operations() {
     Computer computer;
     computer.powerOn();
     
-    SimpleFileSystem& fs = computer.getFileSystem();
+    vfs::VirtualFileSystem& fs = computer.getFileSystem();
     
     // Создаем файл
-    fs.createFile("/test.txt");
-    ASSERT_TRUE(fs.fileExists("/test.txt"));
+    fs.AttachFile("/test.txt", "/tmp/test.txt");
+    ASSERT_TRUE(fs.Resolve("/test.txt") != nullptr);
     
     // Удаляем файл
-    fs.deleteFile("/test.txt");
-    ASSERT_FALSE(fs.fileExists("/test.txt"));
+    fs.Remove("/test.txt");
+    ASSERT_TRUE(fs.Resolve("/test.txt") == nullptr);
 }
 
 int main() {

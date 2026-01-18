@@ -25,6 +25,10 @@ struct Command {
     CommandType type;
     int operand;  // Операнд (используется для PUSH)
 
+    // Нужен для работы нового LazySequence<T> (внутри есть `T x;` и `new T[n]`).
+    // По умолчанию — безопасная остановка.
+    Command() : type(CommandType::HALT), operand(0) {}
+
     Command(CommandType t, int op = 0) : type(t), operand(op) {}
 };
 

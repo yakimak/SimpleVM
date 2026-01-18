@@ -7,6 +7,9 @@
 #include <sstream>
 #include <algorithm>
 #include "CString/cstring_bridge.hpp"
+#include "LazySequence/Sequence.h"
+#include "LazySequence/LazySequence.h"
+#include "VirtualFS/virtual_file_system.h"
 
 // Компьютер = [CPU] + [Память] + [BIOS] + [Диск] + [ФС]
 
@@ -27,11 +30,11 @@ void printHelp() {
     std::cout << "  help              - Show this help message" << std::endl;
     std::cout << "  status            - Show system status" << std::endl;
     std::cout << "  ls [path]         - List files in directory" << std::endl;
-    std::cout << "  cat <file>        - Display file contents" << std::endl;
     std::cout << "  touch <file>      - Create empty file" << std::endl;
     std::cout << "  mkdir <dir>       - Create directory" << std::endl;
     std::cout << "  rm <file>         - Delete file" << std::endl;
-    std::cout << "  echo <text> > <file> - Write text to file" << std::endl;
+    std::cout << "  mv <from> <to>    - Move/rename node in VFS" << std::endl;
+    std::cout << "  find <name>       - Find files by name (without path)" << std::endl;
     std::cout << "  cpu status        - Show CPU status" << std::endl;
     std::cout << "  cpu step [n]      - Execute n CPU instructions (default: 1)" << std::endl;
     std::cout << "  cpu push <value>  - Push value onto CPU stack" << std::endl;
@@ -42,6 +45,13 @@ void printHelp() {
     std::cout << "  poweroff          - Power off computer" << std::endl;
     std::cout << "  exit              - Exit program" << std::endl;
     std::cout << "================================\n" << std::endl;
+}
+
+static std::string normalizePath(std::string p) {
+    if (p.empty()) return "/";
+    if (p[0] != '/') p = "/" + p;
+    while (p.size() > 1 && p.back() == '/') p.pop_back();
+    return p;
 }
 
 // Функция для вывода состояния системы
@@ -62,86 +72,69 @@ void printStatus(Computer& computer) {
 }
 
 // Функция для выполнения команды ls
-void cmdLs(SimpleFileSystem& fs, const std::vector<String*>& args) {
-    String* path = args.size() > 1 ? args[1] : cstring_bridge::makeString("/");
-    std::string path_std = cstring_bridge::toStdString(path);
-    if (!path_std.empty() && path_std.back() != '/' && path_std != "/") path_std += "/";
-    if (args.size() <= 1) {
-        cstring_bridge::destroyString(path);
-        path = cstring_bridge::makeString(path_std);
-    }
-    
+void cmdLs(vfs::VirtualFileSystem& fs, const std::vector<String*>& args) {
+    const std::string path_std = args.size() > 1 ? normalizePath(cstring_bridge::toStdString(args[1])) : "/";
     try {
-        std::vector<String*> entries = fs.listDirectoryC(path);
-        if (entries.empty()) {
-            std::cout << "Directory is empty." << std::endl;
-        } else {
-            for (const auto& entry : entries) {
-                std::cout << "  " << cstring_bridge::toStdString(entry) << std::endl;
+        vfs::Node* n = fs.Resolve(path_std);
+        if (!n) {
+            std::cout << "Not found: " << path_std << "\n";
+            return;
+        }
+        if (n->GetType() == vfs::NodeType::File) {
+            auto* f = static_cast<vfs::FileNode*>(n);
+            std::cout << "[F] " << f->GetName() << " -> " << f->GetPhysicalPath() << "\n";
+            return;
+        }
+        auto* dir = static_cast<vfs::DirectoryNode*>(n);
+        const auto& children = dir->GetChildren();
+        if (children.empty()) {
+            std::cout << "Directory is empty.\n";
+            return;
+        }
+        for (const auto& ch : children) {
+            const vfs::Node* child = ch.get();
+            if (child->GetType() == vfs::NodeType::Directory) {
+                std::cout << "[D] " << child->GetName() << "\n";
+            } else {
+                const auto* f = static_cast<const vfs::FileNode*>(child);
+                std::cout << "[F] " << f->GetName() << " -> " << f->GetPhysicalPath() << "\n";
             }
         }
-        for (auto* e : entries) cstring_bridge::destroyString(e);
     } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << "\n";
     }
-    if (args.size() <= 1) cstring_bridge::destroyString(path);
 }
 
-// Функция для выполнения команды cat
-void cmdCat(SimpleFileSystem& fs, const std::vector<String*>& args) {
+void cmdMv(vfs::VirtualFileSystem& fs, const std::vector<String*>& args) {
+    if (args.size() < 3) {
+        std::cerr << "Usage: mv <from> <to>\n";
+        return;
+    }
+    try {
+        fs.Move(normalizePath(cstring_bridge::toStdString(args[1])),
+                normalizePath(cstring_bridge::toStdString(args[2])));
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+    }
+}
+
+void cmdFind(vfs::VirtualFileSystem& fs, const std::vector<String*>& args) {
     if (args.size() < 2) {
-        std::cerr << "Usage: cat <file>" << std::endl;
+        std::cerr << "Usage: find <name>\n";
         return;
     }
-    
+    const std::string name = cstring_bridge::toStdString(args[1]);
     try {
-        LazySequence<uint8_t> read_stream = fs.readFile(args[1]);
-        while (read_stream.hasNext()) {
-            std::cout << static_cast<char>(read_stream.next());
+        auto files = fs.FindFilesByName(name);
+        if (files.empty()) {
+            std::cout << "Not found\n";
+            return;
         }
-        std::cout << std::endl;
+        for (auto* f : files) {
+            std::cout << f->GetVirtualPath() << " -> " << f->GetPhysicalPath() << "\n";
+        }
     } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-}
-
-// Функция для выполнения команды echo
-void cmdEcho(SimpleFileSystem& fs, const std::vector<String*>& args) {
-    if (args.size() < 4 || !cstring_bridge::equalsLit(args[args.size() - 2], ">")) {
-        std::cerr << "Usage: echo <text> > <file>" << std::endl;
-        return;
-    }
-    
-    // Собираем текст (все аргументы между "echo" и ">")
-    std::string text;
-    for (size_t i = 1; i < args.size() - 2; ++i) {
-        if (i > 1) text += " ";
-        text += cstring_bridge::toStdString(args[i]);
-    }
-    
-    String* filename = args.back();
-    
-    try {
-        // Преобразуем текст в вектор байтов
-        std::vector<uint8_t> data(text.begin(), text.end());
-        auto data_ptr = std::make_shared<std::vector<uint8_t>>(data);
-        auto index_ptr = std::make_shared<size_t>(0);
-        
-        auto write_gen = [data_ptr, index_ptr]() -> uint8_t {
-            if (*index_ptr < data_ptr->size()) {
-                return (*data_ptr)[(*index_ptr)++];
-            }
-            return 0;
-        };
-        auto write_has_next = [data_ptr, index_ptr]() -> bool {
-            return *index_ptr < data_ptr->size();
-        };
-        
-        LazySequence<uint8_t> write_stream(write_gen, write_has_next);
-        fs.writeFile(filename, write_stream);
-        std::cout << "Text written to " << cstring_bridge::toStdString(filename) << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << "\n";
     }
 }
 
@@ -158,7 +151,7 @@ int main() {
         std::cout << "Type 'help' for available commands." << std::endl;
         std::cout << "==========================================\n" << std::endl;
         
-        SimpleFileSystem& fs = computer.getFileSystem();
+        vfs::VirtualFileSystem& fs = computer.getFileSystem();
         StackMachine& cpu = computer.getCPU();
         
         // Интерактивный цикл
@@ -189,16 +182,14 @@ int main() {
             else if (cstring_bridge::equalsLit(command, "ls")) {
                 cmdLs(fs, args);
             }
-            else if (cstring_bridge::equalsLit(command, "cat")) {
-                cmdCat(fs, args);
-            }
             else if (cstring_bridge::equalsLit(command, "touch")) {
                 if (args.size() < 2) {
                     std::cerr << "Usage: touch <file>" << std::endl;
                 } else {
                     try {
-                        fs.createFile(args[1]);
-                        std::cout << "File created: " << cstring_bridge::toStdString(args[1]) << std::endl;
+                        const std::string p = normalizePath(cstring_bridge::toStdString(args[1]));
+                        fs.AttachFile(p, p);
+                        std::cout << "File attached: " << p << std::endl;
                     } catch (const std::exception& e) {
                         std::cerr << "Error: " << e.what() << std::endl;
                     }
@@ -209,8 +200,9 @@ int main() {
                     std::cerr << "Usage: mkdir <directory>" << std::endl;
                 } else {
                     try {
-                        fs.createDirectory(args[1]);
-                        std::cout << "Directory created: " << cstring_bridge::toStdString(args[1]) << std::endl;
+                        const std::string p = normalizePath(cstring_bridge::toStdString(args[1]));
+                        fs.MakeDirectory(p);
+                        std::cout << "Directory created: " << p << std::endl;
                     } catch (const std::exception& e) {
                         std::cerr << "Error: " << e.what() << std::endl;
                     }
@@ -221,15 +213,19 @@ int main() {
                     std::cerr << "Usage: rm <file>" << std::endl;
                 } else {
                     try {
-                        fs.deleteFile(args[1]);
-                        std::cout << "File deleted: " << cstring_bridge::toStdString(args[1]) << std::endl;
+                        const std::string p = normalizePath(cstring_bridge::toStdString(args[1]));
+                        fs.Remove(p);
+                        std::cout << "Removed: " << p << std::endl;
                     } catch (const std::exception& e) {
                         std::cerr << "Error: " << e.what() << std::endl;
                     }
                 }
             }
-            else if (cstring_bridge::equalsLit(command, "echo")) {
-                cmdEcho(fs, args);
+            else if (cstring_bridge::equalsLit(command, "mv")) {
+                cmdMv(fs, args);
+            }
+            else if (cstring_bridge::equalsLit(command, "find")) {
+                cmdFind(fs, args);
             }
             else if (cstring_bridge::equalsLit(command, "cpu")) {
                 if (args.size() < 2) {

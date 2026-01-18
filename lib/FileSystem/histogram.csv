@@ -1,0 +1,6 @@
+dict_name,bin_from,bin_to,count,elapsed_ms
+SortedArray,-4.5154,-2.8576,2,0.068417
+SortedArray,-2.8576,-1.1998,1,0.068417
+SortedArray,-1.1998,0.457999,2,0.068417
+SortedArray,0.457999,2.1158,1,0.068417
+SortedArray,2.1158,3.7736,4,0.068417
